@@ -29,8 +29,10 @@ export async function getDashboardData(filters?: {
         monthlyActualData,
         monthlyBudgetData,
         expenseCategories,
-        companyBudgetData,
-        categoryBudgetData,
+        companyExpenseBudgetData,
+        companyIncomeBudgetData,
+        categoryExpenseBudgetData,
+        categoryIncomeBudgetData,
         allCompanies
     ] = await Promise.all([
         prisma.entry.aggregate({
@@ -76,7 +78,7 @@ export async function getDashboardData(filters?: {
         }),
         // Fetch categories to map IDs back to types for the chart
         prisma.category.findMany(),
-        // Fetch budget by company (for new chart)
+        // Fetch EXPENSE budget by company (for new chart)
         prisma.entry.groupBy({
             by: ['companyId'],
             _sum: {
@@ -84,13 +86,29 @@ export async function getDashboardData(filters?: {
             },
             where: { ...baseWhere, category: { type: "EXPENSE" } }
         }),
-        // Fetch budget by category (for new chart)
+        // Fetch INCOME budget by company (for new chart)
+        prisma.entry.groupBy({
+            by: ['companyId'],
+            _sum: {
+                budgetAmount: true
+            },
+            where: { ...baseWhere, category: { type: "INCOME" } }
+        }),
+        // Fetch EXPENSE budget by category (for new chart)
         prisma.entry.groupBy({
             by: ['categoryId'],
             _sum: {
                 budgetAmount: true
             },
             where: { ...baseWhere, category: { type: "EXPENSE" } }
+        }),
+        // Fetch INCOME budget by category (for new chart)
+        prisma.entry.groupBy({
+            by: ['categoryId'],
+            _sum: {
+                budgetAmount: true
+            },
+            where: { ...baseWhere, category: { type: "INCOME" } }
         }),
         // Fetch all companies for mapping
         prisma.company.findMany()
@@ -147,30 +165,60 @@ export async function getDashboardData(filters?: {
         .sort((a, b) => b.value - a.value)
         .slice(0, 5) // Top 5 categories
 
-    // Process company budget distribution
-    const companyBudgetDistribution = companyBudgetData
-        .map(item => {
-            const company = allCompanies.find(c => c.id === item.companyId)
-            return {
-                name: company?.name || 'Bilinmeyen',
-                value: item._sum.budgetAmount || 0
-            }
-        })
-        .filter(item => item.value > 0)
-        .sort((a, b) => b.value - a.value)
+    // Process company budget distribution (both income and expense)
+    const companyMap = new Map<number, { name: string; income: number; expense: number }>()
+
+    // Add expense data
+    companyExpenseBudgetData.forEach(item => {
+        const company = allCompanies.find(c => c.id === item.companyId)
+        if (company) {
+            const existing = companyMap.get(item.companyId) || { name: company.name, income: 0, expense: 0 }
+            existing.expense = item._sum.budgetAmount || 0
+            companyMap.set(item.companyId, existing)
+        }
+    })
+
+    // Add income data
+    companyIncomeBudgetData.forEach(item => {
+        const company = allCompanies.find(c => c.id === item.companyId)
+        if (company) {
+            const existing = companyMap.get(item.companyId) || { name: company.name, income: 0, expense: 0 }
+            existing.income = item._sum.budgetAmount || 0
+            companyMap.set(item.companyId, existing)
+        }
+    })
+
+    const companyBudgetDistribution = Array.from(companyMap.values())
+        .filter(item => item.income > 0 || item.expense > 0)
+        .sort((a, b) => (b.income + b.expense) - (a.income + a.expense))
         .slice(0, 6) // Top 6 companies
 
-    // Process category budget distribution (expense categories only)
-    const categoryBudgetDistribution = categoryBudgetData
-        .map(item => {
-            const category = expenseCategories.find(c => c.id === item.categoryId)
-            return {
-                name: category?.name || 'Bilinmeyen',
-                value: item._sum.budgetAmount || 0
-            }
-        })
-        .filter(item => item.value > 0)
-        .sort((a, b) => b.value - a.value)
+    // Process category budget distribution (both income and expense)
+    const categoryMap = new Map<number, { name: string; income: number; expense: number }>()
+
+    // Add expense data
+    categoryExpenseBudgetData.forEach(item => {
+        const category = expenseCategories.find(c => c.id === item.categoryId)
+        if (category) {
+            const existing = categoryMap.get(item.categoryId) || { name: category.name, income: 0, expense: 0 }
+            existing.expense = item._sum.budgetAmount || 0
+            categoryMap.set(item.categoryId, existing)
+        }
+    })
+
+    // Add income data
+    categoryIncomeBudgetData.forEach(item => {
+        const category = expenseCategories.find(c => c.id === item.categoryId)
+        if (category) {
+            const existing = categoryMap.get(item.categoryId) || { name: category.name, income: 0, expense: 0 }
+            existing.income = item._sum.budgetAmount || 0
+            categoryMap.set(item.categoryId, existing)
+        }
+    })
+
+    const categoryBudgetDistribution = Array.from(categoryMap.values())
+        .filter(item => item.income > 0 || item.expense > 0)
+        .sort((a, b) => (b.income + b.expense) - (a.income + a.expense))
         .slice(0, 8) // Top 8 categories
 
     return {

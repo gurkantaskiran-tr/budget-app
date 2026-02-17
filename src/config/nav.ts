@@ -3,10 +3,15 @@ import {
     Wallet,
     CreditCard,
     Settings,
-    PieChart
+    PieChart,
+    Users,
+    Handshake,
+    CalendarCheck,
+    ContactRound,
+    TrendingUp
 } from "lucide-react"
 
-export const NAV_ITEMS = [
+export const FINANCE_NAV_ITEMS = [
     {
         title: "Dashboard",
         href: "/",
@@ -25,16 +30,40 @@ export const NAV_ITEMS = [
     {
         title: "Nakit Akış",
         href: "/cashflow",
-        icon: PieChart, // Reusing PieChart or maybe another icon like Activity
+        icon: TrendingUp,
     },
     {
         title: "Raporlar",
         href: "/reports",
         icon: PieChart,
     },
+]
+
+export const CRM_NAV_ITEMS = [
     {
-        title: "Ayarlar",
-        href: "/settings",
-        icon: Settings,
+        title: "CRM Panel",
+        href: "/crm",
+        icon: ContactRound,
+    },
+    {
+        title: "Müşteriler",
+        href: "/crm/customers",
+        icon: Users,
+    },
+    {
+        title: "Fırsatlar",
+        href: "/crm/deals",
+        icon: Handshake,
+    },
+    {
+        title: "Aktiviteler",
+        href: "/crm/activities",
+        icon: CalendarCheck,
     },
 ]
+
+export const SETTINGS_NAV_ITEM = {
+    title: "Ayarlar",
+    href: "/settings",
+    icon: Settings,
+}

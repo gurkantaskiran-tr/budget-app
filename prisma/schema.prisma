@@ -8,9 +8,10 @@ datasource db {
 }
 
 model Company {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
   entries   Entry[]
+  customers Customer[]
 }
 
 model Category {
@@ -32,5 +33,79 @@ model Entry {
   
   company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
 
+// ==================== CRM Models ====================
+
+model Customer {
+  id           Int          @id @default(autoincrement())
+  name         String
+  email        String?
+  phone        String?
+  address      String?
+  industry     String?      // Sektör
+  status       String       @default("ACTIVE") // ACTIVE, INACTIVE, LEAD
+  notes        String?
+  companyId    Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  
+  company      Company?     @relation(fields: [companyId], references: [id])
+  contacts     Contact[]
+  deals        Deal[]
+  activities   Activity[]
+}
+
+model Contact {
+  id           Int          @id @default(autoincrement())
+  name         String
+  email        String?
+  phone        String?
+  title        String?      // Job title
+  customerId   Int
+  createdAt    DateTime     @default(now())
+  
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model Deal {
+  id                 Int          @id @default(autoincrement())
+  title              String
+  value              Float        @default(0)
+  valueTRY           Float        @default(0)      // TL Karşılığı
+  stage              String       @default("LEAD") // LEAD, QUALIFIED, PROPOSAL, NEGOTIATION, WON, LOST
+  probability        Int          @default(0)      // 0-100
+  expectedCloseDate  String?      // Bitiş tarihi (ISO date)
+  lastContactDate    String?      // Son temas tarihi (ISO date)
+  notes              String?
+  customerId         Int
+  salesRep           String?      // Satış Temsilcisi
+  dealCompany        String?      // Fırsat Firması
+  productCategory    String?      // Ürün Kategorisi
+  productSubCategory String?      // Ürün Alt Kategorisi
+  currency           String       @default("TRY") // Para Birimi: TRY, USD, EUR
+  source             String?      // Kaynak: Ortak, Çalışan Yönlendirmesi, Dışarıdan Yönlendirme, Doğrudan
+  leadType           String?      // Potansiyel Müşteri Türü: Yeni Müşteri, Yeni İş, Mevcut Müşteri, Mevcut İş
+  tag                String?      // Etiket
+  isStale            Boolean      @default(false) // Çürümüş Lead
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  
+  customer           Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  activities         Activity[]
+}
+
+model Activity {
+  id           Int          @id @default(autoincrement())
+  type         String       // CALL, MEETING, EMAIL, NOTE, TASK
+  title        String
+  description  String?
+  date         DateTime     @default(now())
+  completed    Boolean      @default(false)
+  customerId   Int?
+  dealId       Int?
+  createdAt    DateTime     @default(now())
+  
+  customer     Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
 }

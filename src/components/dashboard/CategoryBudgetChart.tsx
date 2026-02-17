@@ -1,16 +1,15 @@
 "use client"
 
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface CategoryBudgetChartProps {
     data: {
         name: string
-        value: number
+        income: number
+        expense: number
     }[]
 }
-
-const COLORS = ['#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7']
 
 export function CategoryBudgetChart({ data }: CategoryBudgetChartProps) {
     const formatCurrency = (value: number) => {
@@ -54,18 +53,25 @@ export function CategoryBudgetChart({ data }: CategoryBudgetChartProps) {
                                 />
                                 <Tooltip
                                     formatter={(value) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value as number)}
-                                    labelFormatter={(label) => `${label}`}
                                     contentStyle={{
                                         backgroundColor: 'hsl(var(--card))',
                                         border: '1px solid hsl(var(--border))',
                                         borderRadius: '8px'
                                     }}
                                 />
-                                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                                    {data.map((_, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Bar>
+                                <Legend />
+                                <Bar
+                                    dataKey="income"
+                                    name="Gelir"
+                                    fill="#10b981"
+                                    radius={[0, 4, 4, 0]}
+                                />
+                                <Bar
+                                    dataKey="expense"
+                                    name="Gider"
+                                    fill="#ef4444"
+                                    radius={[0, 4, 4, 0]}
+                                />
                             </BarChart>
                         </ResponsiveContainer>
                     )}
